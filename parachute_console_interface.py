@@ -9,6 +9,7 @@ import ui_console.m4_DebugConsole as m4_DebugConsole
 import apprcc_rc
 import cv2
 import types
+import p_utils
 
 class MyMainWinow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -25,6 +26,14 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
                             self.m4_TrackingState, self.m4_Remainer, str(self.FWVelocity),
                             str(self.FYVelocity), str(self.DiffTime))
+
+        self.m4_TrackWinWidth = self.m4_ImageShow.width()
+        self.m4_TrackWinHeight = self.m4_ImageShow.height()
+        self.m4_DetectWinWidth = self.m4_DetectImageShow.width()
+        self.m4_DetectWinHeight = self.m4_DetectImageShow.height()
+        # self.m4_frame = 0
+
+
         self.status = self.statusBar() # 创建状态栏
         self.status.showMessage("降落伞跟踪主程序启动中....", 5000) # 5000表示5秒后消失
         self.m4_timer = QTimer() # 初始化定时器
@@ -56,6 +65,8 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
     # 打开相机
     def m4_OpenCamera(self):
         if self.m4_timer.isActive() == False: # 定时器m4_timer没有启动
+            self.m4_ImageShow.setEnabled(True)
+            self.m4_DetectImageShow.setEnabled(True)
             self.m4_timer.start(44) # 启动定时器m4_timer
             self.capture = cv2.VideoCapture(0)  # 相机初始化
             self.m4_Remainer = '相机已打开....'
@@ -85,6 +96,8 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
             self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
                                 self.m4_TrackingState, self.m4_Remainer, str(self.FWVelocity),
                                 str(self.FYVelocity), str(self.DiffTime))
+            self.m4_ImageShow.setEnabled(False)
+            self.m4_DetectImageShow.setEnabled(False)
         else:
             self.m4_Remainer = '相机已经关闭，无需再次关闭....'
             self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
@@ -94,9 +107,9 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
     # 显示跟踪图像
     def m4_TrackingPlay(self):
         m4_StartTime = time.time()
-        ret, m4_frame = self.capture.read()
-        self.m4_TrackingImageShow(m4_frame)
-        self.m4_DetectingImageShow(m4_frame)
+        ret, self.m4_frame = self.capture.read()
+        self.m4_TrackingImageShow(self.m4_frame)
+        self.m4_DetectingImageShow(self.m4_frame)
         m4_EndTime = time.time()
         m4_DiffTime = (m4_EndTime - m4_StartTime) * 1000
         self.DiffTime = m4_DiffTime
@@ -147,10 +160,10 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         m4_Device += "\n"
         m4_State += "\n"
 
-        m4_Device += "是否开始目标切换跟踪:"
-        m4_State += m4_TrackingState
-        m4_Device += "\n"
-        m4_State += "\n"
+        # m4_Device += "是否开始目标切换跟踪:"
+        # m4_State += m4_TrackingState
+        # m4_Device += "\n"
+        # m4_State += "\n"
 
         m4_OutputInfo = '方位轴速度：'
         m4_OutputInfo += FWVelocity
@@ -176,7 +189,12 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
 
 
     def m4_TrackingInit(self, x0, y0, x1, y1):
-        print(x0, y0, x1, y1)
+        print(self.m4_TrackWinWidth, self.m4_TrackWinHeight)
+        m4_xtl, m4_ytl, m4_xbr, m4_ybr = p_utils.m4_CoordinateConvert(x0, y0, x1, y1,
+                                                                      self.m4_TrackWinWidth, self.m4_TrackWinHeight,
+                                                                      self.m4_frame.shape[1], self.m4_frame.shape[0])
+        cv2.rectangle(self.m4_frame, (m4_xtl, m4_ytl), (m4_xbr, m4_ybr), (0, 0, 255), 5)
+        cv2.imwrite('dddd.png',self.m4_frame)
 
 
 
