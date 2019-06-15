@@ -5,9 +5,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QGuiApplication
 from PyQt5.QtCore import QRect, Qt, QTimer
 from ui_console.parachute_console import *
-from ui_console.yanhua_debug_console import *
-from ui_console.beckhoff_debug_console import *
-from ui_console.tracking_debug_console import *
+import ui_console.m4_DebugConsole as m4_DebugConsole
 import apprcc_rc
 import cv2
 import types
@@ -30,12 +28,12 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         self.status = self.statusBar() # 创建状态栏
         self.status.showMessage("降落伞跟踪主程序启动中....", 5000) # 5000表示5秒后消失
         self.m4_timer = QTimer() # 初始化定时器
-        self.m4_YanhuaDebug = m4_Yanhua_Debug_Console() #创建 研华调试界面对象
+        self.m4_YanhuaDebug = m4_DebugConsole.m4_Yanhua_Debug_Console() #创建 研华调试界面对象
         self.m4_Yanhua_action.triggered.connect(self.m4_CallYanhuaDebugConsole) # 创建 研华调试界面对象信号槽
-        self.m4_BeckHoffDebug = m4_BeckHoff_Debug_Console()  # 创建 倍福调试界面对象
+        self.m4_BeckHoffDebug = m4_DebugConsole.m4_BeckHoff_Debug_Console()  # 创建 倍福调试界面对象
         self.m4_BeckHoff_action.triggered.connect(self.m4_CallBeckHoffDebugConsole) # 创建 倍福调试界面对象信号槽
 
-        self.m4_TrackingDebug = m4_Tracking_Debug_Console()  # 创建 跟踪调试界面对象
+        self.m4_TrackingDebug = m4_DebugConsole.m4_Tracking_Debug_Console()  # 创建 跟踪调试界面对象
         self.m4_manual_tracking_action.triggered.connect(self.m4_CallTrackingDebugConsole)  # 创建 跟踪调试界面对象信号槽
         self.m4_timer.timeout.connect(self.m4_TrackingPlay) # 创建 定时器信号槽
         self.m4_open_camera_action.triggered.connect(self.m4_OpenCamera) # 创建 打开相机信号槽
@@ -88,9 +86,6 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
                                 str(self.FYVelocity), str(self.DiffTime))
         else:
             self.m4_Remainer = '相机已经关闭，无需再次关闭....'
-            self.FWVelocity = 0
-            self.FYVelocity = 0
-            self.DiffTime = 0
             self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
                                 self.m4_TrackingState, self.m4_Remainer, str(self.FWVelocity),
                                 str(self.FYVelocity), str(self.DiffTime))
@@ -182,23 +177,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
 
 
 
-# 研华调试界面类
-class m4_Yanhua_Debug_Console(QWidget, Ui_m4_YanhuaDebug):
-    def __init__(self, parent=None):
-        super(m4_Yanhua_Debug_Console,self).__init__(parent)
-        self.setupUi(self)
 
-# 倍福调试界面类
-class m4_BeckHoff_Debug_Console(QWidget, Ui_m4_BeckHoffDebug):
-    def __init__(self, parent=None):
-        super(m4_BeckHoff_Debug_Console,self).__init__(parent)
-        self.setupUi(self)
-
-# 画矩形框跟踪调试界面类
-class m4_Tracking_Debug_Console(QWidget, Ui_m4_TrackingDebug):
-    def __init__(self, parent=None):
-        super(m4_Tracking_Debug_Console,self).__init__(parent)
-        self.setupUi(self)
 
 
 if __name__ == '__main__':
