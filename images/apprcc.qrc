@@ -1,0 +1,20 @@
+<RCC>
+  <qresource prefix="pic">
+    <file>gyq_65.png</file>
+    <file>cartoon1.ico</file>
+    <file>cartoon2.ico</file>
+    <file>ma.png</file>
+    <file>para.png</file>
+    <file>track_icon.png</file>
+    <file>1138396.png</file>
+    <file>rdfs.png</file>
+    <file>resizeApi.png</file>
+    <file>closecamera.png</file>
+    <file>opencamera.png</file>
+    <file>cartoon3.ico</file>
+    <file>cartoon4.ico</file>
+    <file>IfyEzBj.jpg</file>
+    <file>python.jpg</file>
+    <file>gyq_64.png</file>
+  </qresource>
+</RCC>
