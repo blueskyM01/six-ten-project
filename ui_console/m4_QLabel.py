@@ -5,7 +5,7 @@
 
 
 from PyQt5.QtWidgets import QLabel
-from PyQt5.QtCore import QRect, Qt
+from PyQt5.QtCore import QRect, Qt, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen
 class m4_QLabel(QLabel):
     """
@@ -18,6 +18,7 @@ class m4_QLabel(QLabel):
     x1 = 0
     y1 = 0
     flag = False
+    sendmsg = pyqtSignal(float, float, float, float)
 
     # 鼠标点击事件
     def mousePressEvent(self, event):
@@ -28,10 +29,13 @@ class m4_QLabel(QLabel):
     # 鼠标释放事件
     def mouseReleaseEvent(self, event):
         self.flag = False
+        self.sendmsg.emit(self.x0, self.y0, self.x1, self.y1)
         self.x0 = 0
         self.y0 = 0
         self.x1 = 0
         self.y1 = 0
+
+
 
     # 鼠标移动事件
     def mouseMoveEvent(self, event):

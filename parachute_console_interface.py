@@ -3,7 +3,7 @@ import numpy as np
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QGuiApplication
-from PyQt5.QtCore import QRect, Qt, QTimer
+from PyQt5.QtCore import QRect, Qt, QTimer, pyqtSignal
 from ui_console.parachute_console import *
 import ui_console.m4_DebugConsole as m4_DebugConsole
 import apprcc_rc
@@ -38,6 +38,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         self.m4_timer.timeout.connect(self.m4_TrackingPlay) # 创建 定时器信号槽
         self.m4_open_camera_action.triggered.connect(self.m4_OpenCamera) # 创建 打开相机信号槽
         self.m4_close_camera_action.triggered.connect(self.m4_CloseCamera)  # 创建 关闭相机信号槽
+        self.m4_ImageShow.sendmsg.connect(self.m4_TrackingInit)
 
 
     # 显示研华调试界面 槽函数
@@ -173,6 +174,9 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         self.m4_OutputRemainder.setText(m4_Remaind)
         self.m4_Remainder.setText(m4_RemaindInfo)
 
+
+    def m4_TrackingInit(self, x0, y0, x1, y1):
+        print(x0, y0, x1, y1)
 
 
 
