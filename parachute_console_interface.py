@@ -10,6 +10,8 @@ import apprcc_rc
 import cv2
 import types
 import p_utils
+from siammask.m4_Tracking import *
+import tensorflow as tf
 
 class MyMainWinow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -33,6 +35,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         self.m4_DetectWinHeight = self.m4_DetectImageShow.height()
         # self.m4_frame = 0
 
+        self.m4_TrackingFlag = False # 跟踪标志位
 
         self.status = self.statusBar() # 创建状态栏
         self.status.showMessage("降落伞跟踪主程序启动中....", 5000) # 5000表示5秒后消失
@@ -47,7 +50,21 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         self.m4_timer.timeout.connect(self.m4_TrackingPlay) # 创建 定时器信号槽
         self.m4_open_camera_action.triggered.connect(self.m4_OpenCamera) # 创建 打开相机信号槽
         self.m4_close_camera_action.triggered.connect(self.m4_CloseCamera)  # 创建 关闭相机信号槽
-        self.m4_ImageShow.sendmsg.connect(self.m4_TrackingInit)
+        self.m4_ImageShow.sendmsg.connect(self.m4_TrackingInit) # 自定义信号槽连接
+
+
+        # 跟踪算法
+        MODEL_PATH = 'F:/project/buaa/610_new\python_610/siammask/saved_model/SiamMask_DAVIS.json'
+        self.sess = tf.InteractiveSession()
+        self.m4_Track = m4_TrackingC(MODEL_PATH)
+
+        tf.global_variables_initializer().run()
+
+        vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)  # 放到总图中收集变量
+        track_vars = [var for var in vars if ('Layer1' in var.name or 'Layer2' in var.name or 'Layer3' in var.name
+                                              or 'Layer4' in var.name or 'Downsample' in var.name
+                                              or 'Score' in var.name or 'BBox' in var.name)]
+        load_json(self.sess, track_vars, MODEL_PATH)
 
 
     # 显示研华调试界面 槽函数
@@ -67,7 +84,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         if self.m4_timer.isActive() == False: # 定时器m4_timer没有启动
             self.m4_ImageShow.setEnabled(True)
             self.m4_DetectImageShow.setEnabled(True)
-            self.m4_timer.start(44) # 启动定时器m4_timer
+            self.m4_timer.start(30) # 启动定时器m4_timer
             self.capture = cv2.VideoCapture(0)  # 相机初始化
             self.m4_Remainer = '相机已打开....'
             self.m4_CameraState = '打开'
@@ -108,8 +125,15 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
     def m4_TrackingPlay(self):
         m4_StartTime = time.time()
         ret, self.m4_frame = self.capture.read()
+
+        if self.m4_TrackingFlag:
+            self.m4_Track.m4_TrackingRun(self.m4_frame, self.sess)
+
+
         self.m4_TrackingImageShow(self.m4_frame)
         self.m4_DetectingImageShow(self.m4_frame)
+
+
         m4_EndTime = time.time()
         m4_DiffTime = (m4_EndTime - m4_StartTime) * 1000
         self.DiffTime = m4_DiffTime
@@ -193,9 +217,11 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         m4_xtl, m4_ytl, m4_xbr, m4_ybr = p_utils.m4_CoordinateConvert(x0, y0, x1, y1,
                                                                       self.m4_TrackWinWidth, self.m4_TrackWinHeight,
                                                                       self.m4_frame.shape[1], self.m4_frame.shape[0])
-        cv2.rectangle(self.m4_frame, (m4_xtl, m4_ytl), (m4_xbr, m4_ybr), (0, 0, 255), 5)
-        cv2.imwrite('dddd.png',self.m4_frame)
+        # cv2.rectangle(self.m4_frame, (m4_xtl, m4_ytl), (m4_xbr, m4_ybr), (0, 0, 255), 5)
+        # cv2.imwrite('dddd.png',self.m4_frame)
 
+        self.m4_Track.m4_TrackingInit(self.m4_frame, m4_xtl, m4_ytl, (m4_ybr-m4_ytl), (m4_xbr-m4_xtl))
+        self.m4_TrackingFlag = True
 
 
 
