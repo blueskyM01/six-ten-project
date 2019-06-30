@@ -1,8 +1,8 @@
 import time
 import numpy as np
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QGuiApplication
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QTreeWidgetItem, QFileDialog
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QGuiApplication, QIcon
 from PyQt5.QtCore import QRect, Qt, QTimer, pyqtSignal
 from ui_console.parachute_console import *
 import ui_console.m4_DebugConsole as m4_DebugConsole
@@ -17,6 +17,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super(MyMainWinow,self).__init__(parent)
         self.setupUi(self)
+        # 初始化状态输出栏
         self.m4_MotionState = '断电'
         self.m4_CameraState = '关闭'
         self.m4_ModeState = '手动'
@@ -27,14 +28,18 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         self.DiffTime = 0
         self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
                             self.m4_TrackingState, self.m4_Remainer, str(self.FWVelocity),
-                            str(self.FYVelocity), str(self.DiffTime))
+                            str(self.FYVelocity), str(self.DiffTime)) # 输出到状态栏
 
-        self.m4_TrackWinWidth = self.m4_ImageShow.width()
-        self.m4_TrackWinHeight = self.m4_ImageShow.height()
-        self.m4_DetectWinWidth = self.m4_DetectImageShow.width()
-        self.m4_DetectWinHeight = self.m4_DetectImageShow.height()
-        # self.m4_frame = 0
+        # 初始化设备列表
+        self.m4_DeviceListShow()
 
+
+
+
+        self.m4_TrackWinWidth = self.m4_ImageShow.width() # 主显示窗口的宽度
+        self.m4_TrackWinHeight = self.m4_ImageShow.height() # 主显示窗口的高度
+        self.m4_DetectWinWidth = self.m4_DetectImageShow.width() # 检测窗口的宽度
+        self.m4_DetectWinHeight = self.m4_DetectImageShow.height() # 检测窗口的高度
         self.m4_TrackingFlag = False # 跟踪标志位
 
         self.status = self.statusBar() # 创建状态栏
@@ -50,21 +55,23 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         self.m4_timer.timeout.connect(self.m4_TrackingPlay) # 创建 定时器信号槽
         self.m4_open_camera_action.triggered.connect(self.m4_OpenCamera) # 创建 打开相机信号槽
         self.m4_close_camera_action.triggered.connect(self.m4_CloseCamera)  # 创建 关闭相机信号槽
+        self.m4_ManualModel.toggled.connect(self.m4_MaualAutoSwitch) # 创建 手|自动切换信号槽
+        self.m4_LoadParam_action.triggered.connect(self.m4_LoadParamDialog)
         self.m4_ImageShow.sendmsg.connect(self.m4_TrackingInit) # 自定义信号槽连接
 
 
         # 跟踪算法
-        MODEL_PATH = 'F:/project/buaa/610_new\python_610/siammask/saved_model/SiamMask_DAVIS.json'
-        self.sess = tf.InteractiveSession()
-        self.m4_Track = m4_TrackingC(MODEL_PATH)
+        self.m4_TrackParamName = 'F:/project/buaa/610_new\python_610/siammask/saved_model/SiamMask_DAVIS.json'
+        self.sess = tf.InteractiveSession() # 定义会话
+        self.m4_Track = m4_TrackingC(self.m4_TrackParamName) # 声明跟踪算法类
 
-        tf.global_variables_initializer().run()
+        tf.global_variables_initializer().run() # 初始化tensorflow变量
 
-        vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)  # 放到总图中收集变量
+        vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)  # 收集tensorflow的所有变量
         track_vars = [var for var in vars if ('Layer1' in var.name or 'Layer2' in var.name or 'Layer3' in var.name
                                               or 'Layer4' in var.name or 'Downsample' in var.name
-                                              or 'Score' in var.name or 'BBox' in var.name)]
-        load_json(self.sess, track_vars, MODEL_PATH)
+                                              or 'Score' in var.name or 'BBox' in var.name)] # 跟踪算法的tensorflow变量列表
+        load_json(self.sess, track_vars, MODEL_PATH) # 载入跟踪算法的模型参数
 
 
     # 显示研华调试界面 槽函数
@@ -91,6 +98,11 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
             self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
                                 self.m4_TrackingState, self.m4_Remainer, str(self.FWVelocity),
                                 str(self.FYVelocity), str(self.DiffTime))
+            ret, self.m4_frame = self.capture.read()
+
+            # 跟踪算法先初始化执行一次，因为第一次执行神经网络，显卡卡顿
+            self.m4_Track.m4_TrackingInit(self.m4_frame, 0, 0, 10, 10)
+            self.m4_Track.m4_TrackingRun(self.m4_frame, self.sess)
         else:
             self.m4_Remainer = '相机已经打开，无需再次打开....'
             self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
@@ -115,6 +127,8 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
                                 str(self.FYVelocity), str(self.DiffTime))
             self.m4_ImageShow.setEnabled(False)
             self.m4_DetectImageShow.setEnabled(False)
+
+
         else:
             self.m4_Remainer = '相机已经关闭，无需再次关闭....'
             self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
@@ -211,6 +225,40 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         self.m4_OutputRemainder.setText(m4_Remaind)
         self.m4_Remainder.setText(m4_RemaindInfo)
 
+    # 显示设备列表
+    def m4_DeviceListShow(self, camera_state='在线', controler_state='在线'):
+        self.m4_DeviceList.setColumnCount(2)
+        self.m4_DeviceList.setHeaderLabels(['设备名称', '状态'])
+        # 设置根节点
+        root = QTreeWidgetItem(self.m4_DeviceList)
+        root.setText(0, 'root')
+        # # 设置树形控价的列表宽度
+        # self.m4_DeviceList.setColumnWidth(50,50)
+        # 设置子节点
+        camera = QTreeWidgetItem(root)
+        camera.setText(0, '相机')
+        camera.setText(1, camera_state)
+        camera.setIcon(0, QIcon(":/pic/camera1.png"))
+
+        controler = QTreeWidgetItem(root)
+        controler.setText(0, '倍福')
+        controler.setText(1, controler_state)
+        controler.setIcon(0, QIcon(":/pic/controler.png"))
+
+    # 手自动切换
+    def m4_MaualAutoSwitch(self):
+        if self.m4_ManualModel.isChecked():
+            print('手动控制')
+        else:
+            print('自动控制')
+
+
+    # 网络参数加载
+    def m4_LoadParamDialog(self):
+        self.m4_TrackParamName, _ = QFileDialog.getOpenFileName(self, "载入跟踪算法参数", "./")
+        self.m4_XSearch.setText(self.m4_TrackParamName)
+
+
 
     def m4_TrackingInit(self, x0, y0, x1, y1):
         print(self.m4_TrackWinWidth, self.m4_TrackWinHeight)
@@ -218,10 +266,16 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
                                                                       self.m4_TrackWinWidth, self.m4_TrackWinHeight,
                                                                       self.m4_frame.shape[1], self.m4_frame.shape[0])
         # cv2.rectangle(self.m4_frame, (m4_xtl, m4_ytl), (m4_xbr, m4_ybr), (0, 0, 255), 5)
-        # cv2.imwrite('dddd.png',self.m4_frame)
+
 
         self.m4_Track.m4_TrackingInit(self.m4_frame, m4_xtl, m4_ytl, (m4_ybr-m4_ytl), (m4_xbr-m4_xtl))
         self.m4_TrackingFlag = True
+
+    # 析构函数
+    def __del__(self):
+        # 关闭相机
+        # 控制器断电
+        print('dghjklkjjk')
 
 
 

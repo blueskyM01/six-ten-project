@@ -16,7 +16,7 @@ def set_model_params(sess, model_vars, saved_params):
     assign_ops_group = tf.group(*assign_ops)
     sess.run(assign_ops_group)
 
-
+# 载入跟踪算法的模型参数
 def load_json(sess, vars_to_load, jsonfile='model.json'):
     with open(jsonfile, 'r') as f:
         saved_params = json.load(f)

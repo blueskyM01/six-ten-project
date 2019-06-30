@@ -2,6 +2,8 @@
   <qresource prefix="pic">
     <file>gyq_65.png</file>
     <file>cartoon1.ico</file>
+    <file>camera1.png</file>
+    <file>controler.png</file>
     <file>cartoon2.ico</file>
     <file>ma.png</file>
     <file>para.png</file>
