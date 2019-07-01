@@ -12,6 +12,7 @@ import types
 import p_utils
 from siammask.m4_Tracking import *
 import tensorflow as tf
+import yolo.m4_target_detection as m4_muti_target_detection
 
 class MyMainWinow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
@@ -65,13 +66,25 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         self.sess = tf.InteractiveSession() # 定义会话
         self.m4_Track = m4_TrackingC(self.m4_TrackParamName) # 声明跟踪算法类
 
-        tf.global_variables_initializer().run() # 初始化tensorflow变量
+        # 目标检测算法
+        self.anchor_path = 'H:/demo/yolo3_tensorflow_610/yolo_anchors.txt'
+        self.classes_path = 'H:/demo/yolo3_tensorflow_610/coco.names'
+        self.m4_MutiTargetParamName = 'H:/demo/yolo3_tensorflow_610/param/yolov3.ckpt'
+        self.m4_muti_taget_switch = m4_muti_target_detection.m4_Switch_Track(self.anchor_path, self.classes_path)
 
+        tf.global_variables_initializer().run() # 初始化tensorflow变量
+        # 跟踪算法的tensorflow变量列表
         vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)  # 收集tensorflow的所有变量
         track_vars = [var for var in vars if ('Layer1' in var.name or 'Layer2' in var.name or 'Layer3' in var.name
                                               or 'Layer4' in var.name or 'Downsample' in var.name
-                                              or 'Score' in var.name or 'BBox' in var.name)] # 跟踪算法的tensorflow变量列表
+                                              or 'Score' in var.name or 'BBox' in var.name)]
         load_json(self.sess, track_vars, MODEL_PATH) # 载入跟踪算法的模型参数
+
+        # 目标检测跟踪算法的tensorflow变量列表
+        muti_taget_vars = [var for var in vars if 'darknet53_body' in var.name or 'yolov3_head' in var.name]
+        muti_taget_saver = tf.train.Saver(muti_taget_vars)
+        muti_taget_saver.restore(self.sess, self.m4_MutiTargetParamName) # 载入目标检测算法的模型参数
+        print('yolo_len:',len(muti_taget_vars))
 
 
     # 显示研华调试界面 槽函数
@@ -92,7 +105,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
             self.m4_ImageShow.setEnabled(True)
             self.m4_DetectImageShow.setEnabled(True)
             self.m4_timer.start(30) # 启动定时器m4_timer
-            self.capture = cv2.VideoCapture(0)  # 相机初始化
+            self.capture = cv2.VideoCapture('F:/project/buaa/610_new/jzs2.mp4')  # 相机初始化
             self.m4_Remainer = '相机已打开....'
             self.m4_CameraState = '打开'
             self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
@@ -103,6 +116,8 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
             # 跟踪算法先初始化执行一次，因为第一次执行神经网络，显卡卡顿
             self.m4_Track.m4_TrackingInit(self.m4_frame, 0, 0, 10, 10)
             self.m4_Track.m4_TrackingRun(self.m4_frame, self.sess)
+            # 目标检测执行一次，因为第一次执行神经网络，显卡卡顿
+            self.m4_muti_taget_switch.m4_detect(self.sess, self.m4_frame, True, [0,0,0.1,0.1])
         else:
             self.m4_Remainer = '相机已经打开，无需再次打开....'
             self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
@@ -141,7 +156,15 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         ret, self.m4_frame = self.capture.read()
 
         if self.m4_TrackingFlag:
-            self.m4_Track.m4_TrackingRun(self.m4_frame, self.sess)
+            m4_track_box = self.m4_Track.m4_TrackingRun(self.m4_frame, self.sess)
+            cv2.rectangle(self.m4_frame, (m4_track_box[0], m4_track_box[1]),
+                          (m4_track_box[2], m4_track_box[3]), (0, 0, 255), 4)
+            m4_boxes = self.m4_muti_taget_switch.m4_detect(self.sess, self.m4_frame, True, m4_track_box)
+
+            for boxes in m4_boxes:
+                cv2.rectangle(self.m4_frame, (boxes[0], boxes[1]), (boxes[2], boxes[3]), (255, 255, 255), 4)
+
+
 
 
         self.m4_TrackingImageShow(self.m4_frame)
@@ -261,7 +284,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
 
 
     def m4_TrackingInit(self, x0, y0, x1, y1):
-        print(self.m4_TrackWinWidth, self.m4_TrackWinHeight)
+        # print(self.m4_TrackWinWidth, self.m4_TrackWinHeight)
         m4_xtl, m4_ytl, m4_xbr, m4_ybr = p_utils.m4_CoordinateConvert(x0, y0, x1, y1,
                                                                       self.m4_TrackWinWidth, self.m4_TrackWinHeight,
                                                                       self.m4_frame.shape[1], self.m4_frame.shape[0])
@@ -275,7 +298,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
     def __del__(self):
         # 关闭相机
         # 控制器断电
-        print('dghjklkjjk')
+        print('析构函数执行')
 
 
 

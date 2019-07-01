@@ -127,9 +127,15 @@ class m4_TrackingC:
             image, scores_, bboxes_, self.anchors, self.window, self.target_pos, self.target_size,
             search_scale, self.cfg)
 
-        polygon = _create_polygon(self.target_pos, self.target_size)
+        lt_x = int(self.target_pos[0] - self.target_size[0] // 2)
+        lt_y = int(self.target_pos[1] - self.target_size[1] // 2)
+        br_x = int(self.target_pos[0] + self.target_size[0] // 2)
+        br_y = int(self.target_pos[1] + self.target_size[1] // 2)
+        return [lt_x, lt_y, br_x, br_y]
 
-        cv2.polylines(image, [polygon], True, (0, 255, 0), 3)
+        # polygon = _create_polygon(self.target_pos, self.target_size)
+        #
+        # cv2.polylines(image, [polygon], True, (0, 255, 0), 3)
         # cv2.imshow('SiamMask', image)
         # cv2.waitKey(30)
 
