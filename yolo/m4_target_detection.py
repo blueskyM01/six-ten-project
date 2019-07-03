@@ -39,6 +39,14 @@ class m4_Switch_Track:
         return m4_feat_
 
     def m4_detect(self, sess, img_ori, is_search_p, track_box):
+        '''
+
+        :param sess:
+        :param img_ori:
+        :param is_search_p:
+        :param track_box: [lt_x, lt_y, br_x, br_y]
+        :return: 存储这样点[lt_x, lt_y, w, h]的list
+        '''
         height_ori, width_ori = img_ori.shape[:2]
         img = cv2.resize(img_ori, tuple(self.new_size))
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -46,6 +54,7 @@ class m4_Switch_Track:
         img = img[np.newaxis, :] / 255.
 
         boxes_, scores_, labels_ = sess.run([self.boxes, self.scores, self.labels], feed_dict={self.input_data: img})
+        # boxes_:[lt_x, lt_y, w, h]
 
         # rescale the coordinates to the original image
         boxes_[:, 0] *= (width_ori / float(self.new_size[0]))
@@ -60,15 +69,28 @@ class m4_Switch_Track:
             boxes[2] = boxes[2] - boxes[0]
             boxes[3] = boxes[3] - boxes[1]
             m4_IouScore = x1_IOU(track_box, boxes)
-            if m4_IouScore < 0.5:
+            if m4_IouScore < 0.3:
                 m4_FilterBoxes.append(boxes)
         return m4_FilterBoxes
 
     def m4_compute_similar(self, temp_feat, feat):
+        '''
+
+        :param temp_feat: np.array([[1,2,...]])
+        :param feat:  np.array([[1,2,...]])
+        :return:
+        '''
         distance = 1 - pdist(np.append(temp_feat, feat, axis=0), 'cosine')
         return distance[0]
 
     def m4_cutImage(self, image, box):
+        '''
+        :param image:
+        :param box: [lt_x, lt_y, br_x, br_y]
+        :return:
+        '''
+        box[2] = box[0] + box[2]
+        box[3] = box[1] + box[3]
         lt_x = max(0, int(box[0]))
         lt_y = max(0, int(box[1]))
         br_x = max(0, int(box[2]))

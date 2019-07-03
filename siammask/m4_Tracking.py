@@ -8,8 +8,8 @@ from siammask.json_model_utils import load_json
 from siammask.tracking import (tracking_init, preprocess, update_bounding_box,
                       _example_wh_to_size, _search_wh_to_size, _create_polygon)
 
-DATA_LOCATION = 'F:/project/buaa/610_new/python_610/siammask/datasets/tennis/'
-MODEL_PATH = 'F:/project/buaa/610_new\python_610/siammask/saved_model/SiamMask_DAVIS.json'
+# DATA_LOCATION = 'F:/project/buaa/610_new/python_610/siammask/datasets/tennis/'
+# MODEL_PATH = 'F:/project/buaa/610_new\python_610/siammask/saved_model/SiamMask_DAVIS.json'
 
 def run():
 

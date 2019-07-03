@@ -13,7 +13,8 @@ import p_utils
 from siammask.m4_Tracking import *
 import tensorflow as tf
 import yolo.m4_target_detection as m4_muti_target_detection
-
+import classify.model as m4_Similar
+import classify.cfg as cfg
 class MyMainWinow(QMainWindow, Ui_MainWindow):
     def __init__(self, parent=None):
         super(MyMainWinow,self).__init__(parent)
@@ -72,19 +73,44 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         self.m4_MutiTargetParamName = 'H:/demo/yolo3_tensorflow_610/param/yolov3.ckpt'
         self.m4_muti_taget_switch = m4_muti_target_detection.m4_Switch_Track(self.anchor_path, self.classes_path)
 
+        # 相似度计算算法
+        self.Similarity = m4_Similar.SimilarityCompute(self.sess, cfg=cfg)
+
         tf.global_variables_initializer().run() # 初始化tensorflow变量
         # 跟踪算法的tensorflow变量列表
         vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)  # 收集tensorflow的所有变量
         track_vars = [var for var in vars if ('Layer1' in var.name or 'Layer2' in var.name or 'Layer3' in var.name
                                               or 'Layer4' in var.name or 'Downsample' in var.name
                                               or 'Score' in var.name or 'BBox' in var.name)]
-        load_json(self.sess, track_vars, MODEL_PATH) # 载入跟踪算法的模型参数
+        load_json(self.sess, track_vars, self.m4_TrackParamName) # 载入跟踪算法的模型参数
 
         # 目标检测跟踪算法的tensorflow变量列表
         muti_taget_vars = [var for var in vars if 'darknet53_body' in var.name or 'yolov3_head' in var.name]
         muti_taget_saver = tf.train.Saver(muti_taget_vars)
         muti_taget_saver.restore(self.sess, self.m4_MutiTargetParamName) # 载入目标检测算法的模型参数
         print('yolo_len:',len(muti_taget_vars))
+
+        # 相似度计算模型的tensorflow变量列表
+        self.m4_SimilarityComputeParamName = 'F:/project/buaa/610_new/python_610/similarity/imagenet-256/ImageNet.model-10'
+        similarity_vars = [var for var in vars if 'similaritycompute610' in var.name]
+        similarity_saver = tf.train.Saver(similarity_vars)
+        similarity_saver.restore(self.sess, self.m4_SimilarityComputeParamName)
+        print('similarity_len:', len(similarity_vars))
+
+        # 目标模板
+        m4_planTarget = cv2.imread('F:/project/buaa/610_new/python_610/parachute_tracking_610/yolo/p2.jpeg')
+        self.m4_planTarget_feat = self.m4_GetTargetFeat(m4_planTarget)
+
+        m4_Target1 = cv2.imread('F:/project/buaa/610_new/python_610/parachute_tracking_610/yolo/p-temp.png')
+        self.m4_Target1_feat = self.m4_GetTargetFeat(m4_Target1)
+
+        m4_Target2 = cv2.imread('F:/project/buaa/610_new/python_610/parachute_tracking_610/yolo/p-temp2.png')
+        self.m4_Target2_feat = self.m4_GetTargetFeat(m4_Target2)
+
+
+        print(self.m4_planTarget_feat)
+        print(self.m4_Target1_feat)
+        print(self.m4_Target2_feat)
 
 
     # 显示研华调试界面 槽函数
@@ -161,8 +187,16 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
                           (m4_track_box[2], m4_track_box[3]), (0, 0, 255), 4)
             m4_boxes = self.m4_muti_taget_switch.m4_detect(self.sess, self.m4_frame, True, m4_track_box)
 
+
             for boxes in m4_boxes:
-                cv2.rectangle(self.m4_frame, (boxes[0], boxes[1]), (boxes[2], boxes[3]), (255, 255, 255), 4)
+                m4_TargetImageCut = self.m4_muti_taget_switch.m4_cutImage(self.m4_frame, boxes)
+                ImageCut_feat = self.m4_GetTargetFeat(m4_TargetImageCut)
+                m4_Similar_sorce = self.m4_muti_taget_switch.m4_compute_similar(self.m4_Target1_feat, ImageCut_feat)
+                print(m4_Similar_sorce)
+                if m4_Similar_sorce > 0.7:
+                    cv2.rectangle(self.m4_frame, (boxes[0], boxes[1]), (boxes[2], boxes[3]), (255, 0, 0), 4)
+                else:
+                    cv2.rectangle(self.m4_frame, (boxes[0], boxes[1]), (boxes[2], boxes[3]), (255, 255, 255), 4)
 
 
 
@@ -293,6 +327,16 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
 
         self.m4_Track.m4_TrackingInit(self.m4_frame, m4_xtl, m4_ytl, (m4_ybr-m4_ytl), (m4_xbr-m4_xtl))
         self.m4_TrackingFlag = True
+
+    # BGR图像转RGB [-1, 1]
+    def m4_GetTargetFeat(self, image):
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.resize(image, (cfg.image_size[0], cfg.image_size[1]))
+        image = image.astype(np.float32) / 127.5 - 1.0
+        image_list = [image]
+        image_np = np.array(image_list)
+        image_feat = self.Similarity.m4_Similarity(image_np)
+        return image_feat
 
     # 析构函数
     def __del__(self):
