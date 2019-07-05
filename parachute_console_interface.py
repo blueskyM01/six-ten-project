@@ -101,7 +101,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         m4_planTarget = cv2.imread('/media/yang/F/ubuntu/610param/temple/p2.jpeg')
         self.m4_planTarget_feat = self.m4_GetTargetFeat(m4_planTarget)
 
-        m4_Target1 = cv2.imread('/media/yang/F/ubuntu/610param/temple/pppp.jpg')
+        m4_Target1 = cv2.imread('/media/yang/F/ubuntu/610param/temple/p-temp.png')
         self.m4_Target1_feat = self.m4_GetTargetFeat(m4_Target1)
 
         m4_Target2 = cv2.imread('/media/yang/F/ubuntu/610param/temple/p-temp2.png')
@@ -130,8 +130,8 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         if self.m4_timer.isActive() == False: # 定时器m4_timer没有启动
             self.m4_ImageShow.setEnabled(True)
             self.m4_DetectImageShow.setEnabled(True)
-            self.m4_timer.start(30) # 启动定时器m4_timer
-            self.capture = cv2.VideoCapture('/media/yang/F/ubuntu/610param/1640-480.avi')  # 相机初始化
+            self.m4_timer.start(500) # 启动定时器m4_timer
+            self.capture = cv2.VideoCapture('/media/yang/F/ubuntu/610param/jzs2.mp4')  # 相机初始化
             self.m4_Remainer = '相机已打开....'
             self.m4_CameraState = '打开'
             self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
@@ -181,6 +181,8 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
     def m4_TrackingPlay(self):
         m4_StartTime = time.time()
         ret, self.m4_frame = self.capture.read()
+        m4_DetectImageShow = self.m4_frame.copy()
+
 
         if self.m4_TrackingFlag:
             m4_track_box = self.m4_Track.m4_TrackingRun(self.m4_frame, self.sess)
@@ -191,13 +193,13 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
                 ImageCut_feat = self.m4_GetTargetFeat(m4_TargetImageCut)
                 m4_Similar_sorce = self.m4_muti_taget_switch.m4_compute_similar(self.m4_Target1_feat, ImageCut_feat)
                 print(m4_Similar_sorce)
-                if m4_Similar_sorce > 0.65:
-                    cv2.rectangle(self.m4_frame, (boxes[0], boxes[1]), (boxes[0] + boxes[2], boxes[1] + boxes[3]),
+                if m4_Similar_sorce > 0.8:
+                    cv2.rectangle(m4_DetectImageShow, (boxes[0], boxes[1]), (boxes[0] + boxes[2], boxes[1] + boxes[3]),
                                   (255, 0, 0), 4)
                     self.m4_Track.m4_TrackingInit(self.m4_frame, boxes[0], boxes[1], boxes[2], boxes[3])
 
                 else:
-                    cv2.rectangle(self.m4_frame, (boxes[0], boxes[1]), (boxes[0] + boxes[2], boxes[1] + boxes[3]),
+                    cv2.rectangle(m4_DetectImageShow, (boxes[0], boxes[1]), (boxes[0] + boxes[2], boxes[1] + boxes[3]),
                                   (255, 255, 255), 4)
 
             cv2.rectangle(self.m4_frame, (m4_track_box[0], m4_track_box[1]),
@@ -206,7 +208,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
 
 
         self.m4_TrackingImageShow(self.m4_frame)
-        self.m4_DetectingImageShow(self.m4_frame)
+        self.m4_DetectingImageShow(m4_DetectImageShow)
 
 
         m4_EndTime = time.time()
