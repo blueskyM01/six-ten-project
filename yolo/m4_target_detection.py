@@ -38,7 +38,7 @@ class m4_Switch_Track:
         [m4_feat_] = self.sess.run([self.m4_feat], feed_dict={self.image_bgr: feat_np})
         return m4_feat_
 
-    def m4_detect(self, sess, img_ori, is_search_p, track_box):
+    def m4_detect(self, sess, img_ori, is_search_p, track_box_):
         '''
 
         :param sess:
@@ -47,6 +47,8 @@ class m4_Switch_Track:
         :param track_box: [lt_x, lt_y, br_x, br_y]
         :return: 存储这样点[lt_x, lt_y, w, h]的list
         '''
+
+        track_box = track_box_.copy()
         height_ori, width_ori = img_ori.shape[:2]
         img = cv2.resize(img_ori, tuple(self.new_size))
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -83,12 +85,13 @@ class m4_Switch_Track:
         distance = 1 - pdist(np.append(temp_feat, feat, axis=0), 'cosine')
         return distance[0]
 
-    def m4_cutImage(self, image, box):
+    def m4_cutImage(self, image, box_):
         '''
         :param image:
-        :param box: [lt_x, lt_y, br_x, br_y]
+        :param box: [lt_x, lt_y, w, h]
         :return:
         '''
+        box = box_.copy()
         box[2] = box[0] + box[2]
         box[3] = box[1] + box[3]
         lt_x = max(0, int(box[0]))

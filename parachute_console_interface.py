@@ -63,14 +63,14 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
 
 
         # 跟踪算法
-        self.m4_TrackParamName = 'F:/project/buaa/610_new\python_610/siammask/saved_model/SiamMask_DAVIS.json'
+        self.m4_TrackParamName = '/media/yang/F/ubuntu/610param/SiamMask_DAVIS.json'
         self.sess = tf.InteractiveSession() # 定义会话
         self.m4_Track = m4_TrackingC(self.m4_TrackParamName) # 声明跟踪算法类
 
         # 目标检测算法
-        self.anchor_path = 'H:/demo/yolo3_tensorflow_610/yolo_anchors.txt'
-        self.classes_path = 'H:/demo/yolo3_tensorflow_610/coco.names'
-        self.m4_MutiTargetParamName = 'H:/demo/yolo3_tensorflow_610/param/yolov3.ckpt'
+        self.anchor_path = '/media/yang/F/ubuntu/610param/yolo_anchors.txt'
+        self.classes_path = '/media/yang/F/ubuntu/610param/coco.names'
+        self.m4_MutiTargetParamName = '/media/yang/F/ubuntu/610param/yolo/yolov3.ckpt'
         self.m4_muti_taget_switch = m4_muti_target_detection.m4_Switch_Track(self.anchor_path, self.classes_path)
 
         # 相似度计算算法
@@ -91,26 +91,26 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         print('yolo_len:',len(muti_taget_vars))
 
         # 相似度计算模型的tensorflow变量列表
-        self.m4_SimilarityComputeParamName = 'F:/project/buaa/610_new/python_610/similarity/imagenet-256/ImageNet.model-10'
+        self.m4_SimilarityComputeParamName = '/media/yang/F/ubuntu/imagenet/muti-gpu/checkpoint/2_GPU/ImageNet.model-40'
         similarity_vars = [var for var in vars if 'similaritycompute610' in var.name]
         similarity_saver = tf.train.Saver(similarity_vars)
         similarity_saver.restore(self.sess, self.m4_SimilarityComputeParamName)
         print('similarity_len:', len(similarity_vars))
 
         # 目标模板
-        m4_planTarget = cv2.imread('F:/project/buaa/610_new/python_610/parachute_tracking_610/yolo/p2.jpeg')
+        m4_planTarget = cv2.imread('/media/yang/F/ubuntu/610param/temple/p2.jpeg')
         self.m4_planTarget_feat = self.m4_GetTargetFeat(m4_planTarget)
 
-        m4_Target1 = cv2.imread('F:/project/buaa/610_new/python_610/parachute_tracking_610/yolo/p-temp.png')
+        m4_Target1 = cv2.imread('/media/yang/F/ubuntu/610param/temple/pppp.jpg')
         self.m4_Target1_feat = self.m4_GetTargetFeat(m4_Target1)
 
-        m4_Target2 = cv2.imread('F:/project/buaa/610_new/python_610/parachute_tracking_610/yolo/p-temp2.png')
+        m4_Target2 = cv2.imread('/media/yang/F/ubuntu/610param/temple/p-temp2.png')
         self.m4_Target2_feat = self.m4_GetTargetFeat(m4_Target2)
 
 
-        print(self.m4_planTarget_feat)
-        print(self.m4_Target1_feat)
-        print(self.m4_Target2_feat)
+        # print(self.m4_planTarget_feat)
+        # print(self.m4_Target1_feat)
+        # print(self.m4_Target2_feat)
 
 
     # 显示研华调试界面 槽函数
@@ -131,7 +131,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
             self.m4_ImageShow.setEnabled(True)
             self.m4_DetectImageShow.setEnabled(True)
             self.m4_timer.start(30) # 启动定时器m4_timer
-            self.capture = cv2.VideoCapture('F:/project/buaa/610_new/jzs2.mp4')  # 相机初始化
+            self.capture = cv2.VideoCapture('/media/yang/F/ubuntu/610param/1640-480.avi')  # 相机初始化
             self.m4_Remainer = '相机已打开....'
             self.m4_CameraState = '打开'
             self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
@@ -168,6 +168,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
                                 str(self.FYVelocity), str(self.DiffTime))
             self.m4_ImageShow.setEnabled(False)
             self.m4_DetectImageShow.setEnabled(False)
+            self.m4_TrackingFlag = False
 
 
         else:
@@ -183,21 +184,24 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
 
         if self.m4_TrackingFlag:
             m4_track_box = self.m4_Track.m4_TrackingRun(self.m4_frame, self.sess)
-            cv2.rectangle(self.m4_frame, (m4_track_box[0], m4_track_box[1]),
-                          (m4_track_box[2], m4_track_box[3]), (0, 0, 255), 4)
             m4_boxes = self.m4_muti_taget_switch.m4_detect(self.sess, self.m4_frame, True, m4_track_box)
-
 
             for boxes in m4_boxes:
                 m4_TargetImageCut = self.m4_muti_taget_switch.m4_cutImage(self.m4_frame, boxes)
                 ImageCut_feat = self.m4_GetTargetFeat(m4_TargetImageCut)
                 m4_Similar_sorce = self.m4_muti_taget_switch.m4_compute_similar(self.m4_Target1_feat, ImageCut_feat)
                 print(m4_Similar_sorce)
-                if m4_Similar_sorce > 0.7:
-                    cv2.rectangle(self.m4_frame, (boxes[0], boxes[1]), (boxes[2], boxes[3]), (255, 0, 0), 4)
-                else:
-                    cv2.rectangle(self.m4_frame, (boxes[0], boxes[1]), (boxes[2], boxes[3]), (255, 255, 255), 4)
+                if m4_Similar_sorce > 0.65:
+                    cv2.rectangle(self.m4_frame, (boxes[0], boxes[1]), (boxes[0] + boxes[2], boxes[1] + boxes[3]),
+                                  (255, 0, 0), 4)
+                    self.m4_Track.m4_TrackingInit(self.m4_frame, boxes[0], boxes[1], boxes[2], boxes[3])
 
+                else:
+                    cv2.rectangle(self.m4_frame, (boxes[0], boxes[1]), (boxes[0] + boxes[2], boxes[1] + boxes[3]),
+                                  (255, 255, 255), 4)
+
+            cv2.rectangle(self.m4_frame, (m4_track_box[0], m4_track_box[1]),
+                          (m4_track_box[2], m4_track_box[3]), (0, 0, 255), 4)
 
 
 
