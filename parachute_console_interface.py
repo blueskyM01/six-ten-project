@@ -91,7 +91,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         print('yolo_len:',len(muti_taget_vars))
 
         # 相似度计算模型的tensorflow变量列表
-        self.m4_SimilarityComputeParamName = '/media/yang/F/ubuntu/imagenet/muti-gpu/checkpoint/2_GPU/ImageNet.model-40'
+        self.m4_SimilarityComputeParamName = '/media/yang/F/ubuntu/imagenet/muti-gpu/1024/image_train_jieya/ImageNet.model-40'
         similarity_vars = [var for var in vars if 'similaritycompute610' in var.name]
         similarity_saver = tf.train.Saver(similarity_vars)
         similarity_saver.restore(self.sess, self.m4_SimilarityComputeParamName)
@@ -193,7 +193,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
                 ImageCut_feat = self.m4_GetTargetFeat(m4_TargetImageCut)
                 m4_Similar_sorce = self.m4_muti_taget_switch.m4_compute_similar(self.m4_Target1_feat, ImageCut_feat)
                 print(m4_Similar_sorce)
-                if m4_Similar_sorce > 0.8:
+                if m4_Similar_sorce > 0.6:
                     cv2.rectangle(m4_DetectImageShow, (boxes[0], boxes[1]), (boxes[0] + boxes[2], boxes[1] + boxes[3]),
                                   (255, 0, 0), 4)
                     self.m4_Track.m4_TrackingInit(self.m4_frame, boxes[0], boxes[1], boxes[2], boxes[3])
