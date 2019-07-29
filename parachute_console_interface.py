@@ -63,14 +63,14 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
 
 
         # 跟踪算法
-        self.m4_TrackParamName = '/media/yang/F/ubuntu/610param/SiamMask_DAVIS.json'
+        self.m4_TrackParamName = 'F:/project/buaa/610_new/python_610/610_param/siammask/SiamMask_DAVIS.json'
         self.sess = tf.InteractiveSession() # 定义会话
         self.m4_Track = m4_TrackingC(self.m4_TrackParamName) # 声明跟踪算法类
 
         # 目标检测算法
-        self.anchor_path = '/media/yang/F/ubuntu/610param/yolo_anchors.txt'
-        self.classes_path = '/media/yang/F/ubuntu/610param/coco.names'
-        self.m4_MutiTargetParamName = '/media/yang/F/ubuntu/610param/yolo/yolov3.ckpt'
+        self.anchor_path = 'F:/project/buaa/610_new/python_610/610_param/yolo/yolo_anchors.txt'
+        self.classes_path = 'F:/project/buaa/610_new/python_610/610_param/yolo/coco.names'
+        self.m4_MutiTargetParamName = 'F:/project/buaa/610_new/python_610/610_param/yolo/yolov3.ckpt'
         self.m4_muti_taget_switch = m4_muti_target_detection.m4_Switch_Track(self.anchor_path, self.classes_path)
 
         # 相似度计算算法
@@ -91,20 +91,20 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
         print('yolo_len:',len(muti_taget_vars))
 
         # 相似度计算模型的tensorflow变量列表
-        self.m4_SimilarityComputeParamName = '/media/yang/F/ubuntu/imagenet/muti-gpu/1024/image_train_jieya/ImageNet.model-40'
+        self.m4_SimilarityComputeParamName = 'F:/project/buaa/610_new/python_610/610_param/similarity/ImageNet.model-94'
         similarity_vars = [var for var in vars if 'similaritycompute610' in var.name]
         similarity_saver = tf.train.Saver(similarity_vars)
         similarity_saver.restore(self.sess, self.m4_SimilarityComputeParamName)
         print('similarity_len:', len(similarity_vars))
 
         # 目标模板
-        m4_planTarget = cv2.imread('/media/yang/F/ubuntu/610param/temple/p2.jpeg')
+        m4_planTarget = cv2.imread('F:/project/buaa/610_new/python_610/610_param/template/p2.jpeg')
         self.m4_planTarget_feat = self.m4_GetTargetFeat(m4_planTarget)
 
-        m4_Target1 = cv2.imread('/media/yang/F/ubuntu/610param/temple/p-temp.png')
+        m4_Target1 = cv2.imread('F:/project/buaa/610_new/python_610/610_param/template/p-temp.png')
         self.m4_Target1_feat = self.m4_GetTargetFeat(m4_Target1)
 
-        m4_Target2 = cv2.imread('/media/yang/F/ubuntu/610param/temple/p-temp2.png')
+        m4_Target2 = cv2.imread('F:/project/buaa/610_new/python_610/610_param/template/p-temp2.png')
         self.m4_Target2_feat = self.m4_GetTargetFeat(m4_Target2)
 
 
@@ -131,7 +131,7 @@ class MyMainWinow(QMainWindow, Ui_MainWindow):
             self.m4_ImageShow.setEnabled(True)
             self.m4_DetectImageShow.setEnabled(True)
             self.m4_timer.start(500) # 启动定时器m4_timer
-            self.capture = cv2.VideoCapture('/media/yang/F/ubuntu/610param/jzs2.mp4')  # 相机初始化
+            self.capture = cv2.VideoCapture('F:/project/buaa/610_new/jzs.mp4')  # 相机初始化
             self.m4_Remainer = '相机已打开....'
             self.m4_CameraState = '打开'
             self.m4_StateOutput(self.m4_MotionState, self.m4_CameraState, self.m4_ModeState,
